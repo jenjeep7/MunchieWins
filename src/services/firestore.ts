@@ -90,8 +90,17 @@ export const updateUserProfile = async (userId: string, updates: Partial<UserPro
 export const addWin = async (userId: string, win: Win) => {
   try {
     const winsRef = collection(db, 'users', userId, 'wins');
+    
+    // Filter out undefined values
+    const winData = Object.entries(win).reduce((acc, [key, value]) => {
+      if (value !== undefined) {
+        acc[key] = value;
+      }
+      return acc;
+    }, {} as any);
+    
     await addDoc(winsRef, {
-      ...win,
+      ...winData,
       timestamp: win.timestamp,
       createdAt: new Date().toISOString(),
     });

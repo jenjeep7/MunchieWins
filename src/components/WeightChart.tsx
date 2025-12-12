@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, TouchableOpacity, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, Dimensions, StyleSheet } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
 import { WeightEntry } from '../types';
+import { colors, spacing, borderRadius, shadows } from '../styles/theme';
 
 interface WeightChartProps {
   data: WeightEntry[];
@@ -49,38 +50,41 @@ export const WeightChart = ({ data }: WeightChartProps) => {
   const labels = chartData.map(d => d.date);
 
   const chartConfig = {
-    backgroundColor: '#ffffff',
-    backgroundGradientFrom: '#ffffff',
-    backgroundGradientTo: '#ffffff',
+    backgroundColor: colors.surface,
+    backgroundGradientFrom: colors.surface,
+    backgroundGradientTo: colors.surface,
     decimalPlaces: 1,
     color: (opacity = 1) => `rgba(255, 140, 66, ${opacity})`,
-    labelColor: (opacity = 1) => `rgba(156, 163, 175, ${opacity})`,
+    labelColor: (opacity = 1) => `rgba(107, 114, 128, ${opacity})`,
     style: {
       borderRadius: 16,
     },
     propsForDots: {
-      r: '4',
-      strokeWidth: '0',
-      stroke: '#FF8C42',
+      r: '6',
+      strokeWidth: '2',
+      stroke: colors.primary,
+      fill: colors.surface,
     },
   };
 
   return (
-    <View className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
-      <View className="flex-row justify-between items-center mb-4">
-        <Text className="text-sm font-semibold text-gray-500">Weight Trend</Text>
-        <View className="flex-row bg-gray-100 rounded-lg p-0.5">
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.title}>Weight Trend</Text>
+        <View style={styles.rangeSelector}>
           {(['1W', '1M', 'ALL'] as TimeRange[]).map((r) => (
             <TouchableOpacity
               key={r}
               onPress={() => setRange(r)}
-              className={`px-3 py-1 rounded-md ${
-                range === r ? 'bg-white shadow-sm' : ''
-              }`}
+              style={[
+                styles.rangeButton,
+                range === r && styles.rangeButtonActive
+              ]}
             >
-              <Text className={`text-xs font-bold ${
-                range === r ? 'text-gray-800' : 'text-gray-400'
-              }`}>
+              <Text style={[
+                styles.rangeButtonText,
+                range === r && styles.rangeButtonTextActive
+              ]}>
                 {r}
               </Text>
             </TouchableOpacity>
@@ -88,36 +92,35 @@ export const WeightChart = ({ data }: WeightChartProps) => {
         </View>
       </View>
       
-      <View className="h-64 w-full">
+      <View style={styles.chartContainer}>
         {chartData.length > 0 ? (
           <LineChart
             data={{
-              labels: labels,
+              labels: labels.length > 7 ? labels.filter((_, i) => i % 2 === 0) : labels,
               datasets: [
                 {
                   data: weights,
                 },
               ],
             }}
-            width={screenWidth - 40}
-            height={220}
+            width={screenWidth - 80}
+            height={240}
             chartConfig={chartConfig}
             bezier
-            style={{
-              marginVertical: 8,
-              borderRadius: 16,
-            }}
-            withInnerLines={false}
+            style={styles.chart}
+            withInnerLines={true}
             withOuterLines={false}
             withVerticalLines={false}
             withHorizontalLines={true}
             withDots={true}
             withShadow={false}
             fromZero={false}
+            segments={4}
+            yAxisSuffix=" lbs"
           />
         ) : (
-          <View className="h-full flex items-center justify-center">
-            <Text className="text-gray-400 text-xs">
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyText}>
               No data for this period
             </Text>
           </View>
@@ -126,3 +129,66 @@ export const WeightChart = ({ data }: WeightChartProps) => {
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    backgroundColor: colors.surface,
+    padding: spacing.lg,
+    borderRadius: borderRadius.xl,
+    borderWidth: 1,
+    borderColor: colors.gray[100],
+    ...shadows.sm,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.lg,
+  },
+  title: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.gray[800],
+  },
+  rangeSelector: {
+    flexDirection: 'row',
+    backgroundColor: colors.gray[100],
+    borderRadius: borderRadius.md,
+    padding: 2,
+  },
+  rangeButton: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.sm,
+  },
+  rangeButtonActive: {
+    backgroundColor: colors.surface,
+    ...shadows.sm,
+  },
+  rangeButtonText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.gray[400],
+  },
+  rangeButtonTextActive: {
+    color: colors.gray[800],
+  },
+  chartContainer: {
+    height: 240,
+    width: '100%',
+    alignItems: 'center',
+  },
+  chart: {
+    marginVertical: 0,
+    borderRadius: borderRadius.md,
+  },
+  emptyState: {
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyText: {
+    color: colors.gray[400],
+    fontSize: 14,
+  },
+});

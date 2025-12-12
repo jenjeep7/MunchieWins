@@ -127,8 +127,6 @@ function MainApp() {
   };
 
   const handleOnboardingComplete = async (data: Partial<UserProfile>) => {
-    console.log('Onboarding completed with data:', data);
-    
     const updatedProfile = {
       ...profile,
       ...data,
@@ -136,15 +134,12 @@ function MainApp() {
       lastLogDate: new Date().toISOString().split('T')[0]
     };
     
-    console.log('Updated profile:', updatedProfile);
     setProfile(updatedProfile);
     
     // Save to Firestore
     if (user) {
       try {
-        console.log('Saving profile to Firestore for user:', user.uid);
         await createUserProfile(user.uid, updatedProfile);
-        console.log('Profile saved successfully to Firestore');
       } catch (error) {
         console.error('Error saving profile to Firestore:', error);
       }
@@ -211,9 +206,9 @@ function MainApp() {
     setShowTrackModal(false);
   };
 
-  const handleAddWeight = async (weight: number) => {
+  const handleAddWeight = async (weight: number, date: string) => {
     const entry: WeightEntry = {
-      date: new Date().toISOString(),
+      date: date,
       weight
     };
     
@@ -236,13 +231,24 @@ function MainApp() {
     }));
   };
 
-  const handleUpdateCustomChallenge = (id: string) => {
+  const handleUpdateCustomChallenge = async (id: string) => {
+    const updatedChallenges = (profile.customChallenges || []).map(c => 
+      c.id === id ? { ...c, current: c.current + 1 } : c
+    );
+    
     setProfile(prev => ({
       ...prev,
-      customChallenges: (prev.customChallenges || []).map(c => 
-        c.id === id ? { ...c, current: c.current + 1 } : c
-      )
+      customChallenges: updatedChallenges
     }));
+    
+    // Save to Firestore
+    if (user) {
+      try {
+        await updateUserProfile(user.uid, { customChallenges: updatedChallenges });
+      } catch (error) {
+        console.error('Error updating challenge:', error);
+      }
+    }
   };
 
   // Show loading spinner while checking auth
@@ -268,7 +274,6 @@ function MainApp() {
 
   // Show onboarding if not completed
   if (!profile.onboardingComplete) {
-    console.log('Showing onboarding, profile.onboardingComplete:', profile.onboardingComplete);
     return (
       <SafeAreaProvider>
         <StatusBar style="dark" />
@@ -276,8 +281,6 @@ function MainApp() {
       </SafeAreaProvider>
     );
   }
-
-  console.log('Showing main app, currentPage:', currentPage, 'profile:', profile);
 
   if (showTrackModal) {
     return (
@@ -328,7 +331,8 @@ function MainApp() {
           <ProfilePage 
             profile={profile} 
             wins={wins} 
-            onUpdateProfile={handleUpdateProfile} 
+            onUpdateProfile={handleUpdateProfile}
+            onTrackClick={() => setShowTrackModal(true)}
           />
         )}
 

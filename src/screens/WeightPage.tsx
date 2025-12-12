@@ -1,26 +1,46 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Platform } from 'react-native';
 import { UserProfile, WeightEntry } from '../types';
 import { WeightChart } from '../components/WeightChart';
 import { MunchyMascot } from '../components/MunchyMascot';
-import { Scale } from 'lucide-react-native';
+import { Scale, Calendar } from 'lucide-react-native';
 import { colors, spacing, borderRadius, shadows } from '../styles/theme';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 interface WeightPageProps {
   profile: UserProfile;
   weightHistory: WeightEntry[];
-  onAddWeight: (w: number) => void;
+  onAddWeight: (w: number, date: string) => void;
 }
 
 export const WeightPage = ({ profile, weightHistory, onAddWeight }: WeightPageProps) => {
   const [newWeight, setNewWeight] = useState('');
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   const handleWeightSubmit = async () => {
     const w = parseFloat(newWeight);
     if (w) {
-      onAddWeight(w);
+      const dateString = selectedDate.toISOString();
+      onAddWeight(w, dateString);
       setNewWeight('');
+      setSelectedDate(new Date());
+      setShowDatePicker(false);
     }
+  };
+
+  const handleDateChange = (event: any, date?: Date) => {
+    setShowDatePicker(Platform.OS === 'ios');
+    if (date) {
+      setSelectedDate(date);
+    }
+  };
+
+  const formatDate = (date: Date) => {
+    const today = new Date();
+    const isToday = date.toDateString() === today.toDateString();
+    if (isToday) return 'Today';
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
   const currentWeight = weightHistory.length > 0 
@@ -47,6 +67,24 @@ export const WeightPage = ({ profile, weightHistory, onAddWeight }: WeightPagePr
             <Text style={styles.goalText}>Goal: {profile.goalWeight} lbs</Text>
           </View>
           
+          <TouchableOpacity 
+            style={styles.dateButton}
+            onPress={() => setShowDatePicker(true)}
+          >
+            <Calendar size={16} color={colors.gray[500]} />
+            <Text style={styles.dateText}>{formatDate(selectedDate)}</Text>
+          </TouchableOpacity>
+          
+          {showDatePicker && (
+            <DateTimePicker
+              value={selectedDate}
+              mode="date"
+              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              onChange={handleDateChange}
+              maximumDate={new Date()}
+            />
+          )}
+          
           <View style={styles.inputRow}>
             <TextInput 
               keyboardType="numeric"
@@ -65,13 +103,13 @@ export const WeightPage = ({ profile, weightHistory, onAddWeight }: WeightPagePr
           </View>
         </View>
         
-        <View style={styles.chartCard}>
-          {weightHistory.length === 0 ? (
+        {weightHistory.length === 0 ? (
+          <View style={styles.emptyCard}>
             <Text style={styles.emptyText}>Log your weight to see the graph!</Text>
-          ) : (
-            <WeightChart data={weightHistory} />
-          )}
-        </View>
+          </View>
+        ) : (
+          <WeightChart data={weightHistory} />
+        )}
       </View>
     </ScrollView>
   );
@@ -132,6 +170,20 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.gray[400],
   },
+  dateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    backgroundColor: colors.gray[50],
+    padding: spacing.sm,
+    borderRadius: borderRadius.md,
+    marginBottom: spacing.md,
+  },
+  dateText: {
+    fontSize: 14,
+    color: colors.gray[800],
+    fontWeight: '500',
+  },
   inputRow: {
     flexDirection: 'row',
     gap: spacing.sm,
@@ -156,7 +208,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontSize: 16,
   },
-  chartCard: {
+  emptyCard: {
     backgroundColor: colors.surface,
     padding: spacing.xl,
     borderRadius: borderRadius.xl,

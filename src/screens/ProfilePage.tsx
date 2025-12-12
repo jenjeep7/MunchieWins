@@ -9,9 +9,10 @@ interface ProfilePageProps {
   profile: UserProfile;
   wins: Win[];
   onUpdateProfile: (p: Partial<UserProfile>) => void;
+  onTrackClick: () => void;
 }
 
-export const ProfilePage = ({ profile, wins, onUpdateProfile }: ProfilePageProps) => {
+export const ProfilePage = ({ profile, wins, onUpdateProfile, onTrackClick }: ProfilePageProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [newName, setNewName] = useState(profile.name);
 
