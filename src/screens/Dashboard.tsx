@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Modal, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Modal, StyleSheet, Image } from 'react-native';
 import { MunchyMascot } from '../components/MunchyMascot';
 import { ActivityChart } from '../components/ActivityChart';
 import { UserProfile, Win, WinType } from '../types';
@@ -183,18 +183,15 @@ export const Dashboard = ({ profile, wins, onTrackClick, onProfileClick }: Dashb
             </TouchableOpacity>
             
             <TouchableOpacity onPress={onProfileClick} activeOpacity={0.8}>
-              {profile.avatar ? (
-                <View style={styles.avatarContainer}>
-                  {/* Avatar would go here with Image component */}
+              <View style={styles.avatarContainer}>
+                {profile.avatar ? (
+                  <Image source={{ uri: profile.avatar }} style={styles.avatarImage} />
+                ) : (
                   <View style={styles.avatarPlaceholder}>
                     <Text style={styles.avatarEmoji}>👤</Text>
                   </View>
-                </View>
-              ) : (
-                <View style={styles.avatarPlaceholder}>
-                  <Text style={styles.avatarEmoji}>👤</Text>
-                </View>
-              )}
+                )}
+              </View>
               <View style={styles.avatarBadge} />
             </TouchableOpacity>
           </View>
@@ -348,6 +345,13 @@ const styles = StyleSheet.create({
     borderColor: colors.surface,
     ...shadows.sm,
     overflow: 'hidden',
+    backgroundColor: colors.gray[300],
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarImage: {
+    width: '100%',
+    height: '100%',
   },
   avatarPlaceholder: {
     width: 48,

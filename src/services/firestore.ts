@@ -35,24 +35,28 @@ export const createUserProfile = async (userId: string, profileData: Partial<Use
   try {
     const docRef = doc(db, 'users', userId);
     const now = new Date().toISOString();
-    const profile: UserProfile = {
+    const profile: any = {
       name: profileData.name || '',
       startWeight: profileData.startWeight || 0,
       goalWeight: profileData.goalWeight || 0,
-      streak: 0,
-      lastLogDate: new Date().toISOString().split('T')[0],
-      totalMoneySaved: 0,
-      totalCaloriesSaved: 0,
+      streak: profileData.streak || 0,
+      lastLogDate: profileData.lastLogDate || new Date().toISOString().split('T')[0],
+      totalMoneySaved: profileData.totalMoneySaved || 0,
+      totalCaloriesSaved: profileData.totalCaloriesSaved || 0,
       onboardingComplete: profileData.onboardingComplete || false,
       onboardingAnswers: profileData.onboardingAnswers || {},
-      customChallenges: [],
-      avatar: profileData.avatar,
+      customChallenges: profileData.customChallenges || [],
       createdAt: now,
       updatedAt: now,
     };
     
+    // Only add avatar if it exists
+    if (profileData.avatar) {
+      profile.avatar = profileData.avatar;
+    }
+    
     await setDoc(docRef, profile);
-    return profile;
+    return profile as UserProfile;
   } catch (error) {
     console.error('Error creating user profile:', error);
     throw error;
@@ -62,10 +66,20 @@ export const createUserProfile = async (userId: string, profileData: Partial<Use
 export const updateUserProfile = async (userId: string, updates: Partial<UserProfile>) => {
   try {
     const docRef = doc(db, 'users', userId);
-    await updateDoc(docRef, {
-      ...updates,
+    
+    // Filter out undefined values
+    const cleanUpdates: any = {
       updatedAt: new Date().toISOString(),
+    };
+    
+    Object.keys(updates).forEach(key => {
+      const value = (updates as any)[key];
+      if (value !== undefined) {
+        cleanUpdates[key] = value;
+      }
     });
+    
+    await updateDoc(docRef, cleanUpdates);
   } catch (error) {
     console.error('Error updating user profile:', error);
     throw error;

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 // import './global.css'; // Temporarily disabled
 
@@ -17,6 +17,15 @@ import { ChallengesPage } from './src/screens/ChallengesPage';
 import { ProfilePage } from './src/screens/ProfilePage';
 import { Navigation } from './src/components/Navigation';
 import { colors } from './src/styles/theme';
+import { 
+  getUserProfile, 
+  createUserProfile, 
+  updateUserProfile,
+  addWin,
+  getUserWins,
+  addWeightEntry,
+  getUserWeightHistory
+} from './src/services/firestore';
 
 const STORAGE_KEYS = {
   PROFILE: 'munchy_profile_',
@@ -76,34 +85,86 @@ function MainApp() {
     if (!user) return;
     
     try {
-      const profileData = await AsyncStorage.getItem(STORAGE_KEYS.PROFILE + user.uid);
-      const winsData = await AsyncStorage.getItem(STORAGE_KEYS.WINS + user.uid);
-      const weightData = await AsyncStorage.getItem(STORAGE_KEYS.WEIGHT + user.uid);
+      // Try to load from Firestore first
+      const firestoreProfile = await getUserProfile(user.uid);
+      
+      if (firestoreProfile) {
+        // Load from Firestore
+        setProfile(firestoreProfile);
+        const [firestoreWins, firestoreWeight] = await Promise.all([
+          getUserWins(user.uid),
+          getUserWeightHistory(user.uid)
+        ]);
+        setWins(firestoreWins);
+        setWeightHistory(firestoreWeight);
+      } else {
+        // Fallback to AsyncStorage
+        const profileData = await AsyncStorage.getItem(STORAGE_KEYS.PROFILE + user.uid);
+        const winsData = await AsyncStorage.getItem(STORAGE_KEYS.WINS + user.uid);
+        const weightData = await AsyncStorage.getItem(STORAGE_KEYS.WEIGHT + user.uid);
 
-      if (profileData) setProfile(JSON.parse(profileData));
-      if (winsData) setWins(JSON.parse(winsData));
-      if (weightData) setWeightHistory(JSON.parse(weightData));
+        if (profileData) setProfile(JSON.parse(profileData));
+        if (winsData) setWins(JSON.parse(winsData));
+        if (weightData) setWeightHistory(JSON.parse(weightData));
+      }
     } catch (error) {
       console.error('Error loading data:', error);
+      // Fallback to AsyncStorage if Firestore fails
+      try {
+        const profileData = await AsyncStorage.getItem(STORAGE_KEYS.PROFILE + user.uid);
+        const winsData = await AsyncStorage.getItem(STORAGE_KEYS.WINS + user.uid);
+        const weightData = await AsyncStorage.getItem(STORAGE_KEYS.WEIGHT + user.uid);
+
+        if (profileData) setProfile(JSON.parse(profileData));
+        if (winsData) setWins(JSON.parse(winsData));
+        if (weightData) setWeightHistory(JSON.parse(weightData));
+      } catch (asyncError) {
+        console.error('Error loading from AsyncStorage:', asyncError);
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleOnboardingComplete = (data: Partial<UserProfile>) => {
-    setProfile(prev => ({
-      ...prev,
+  const handleOnboardingComplete = async (data: Partial<UserProfile>) => {
+    console.log('Onboarding completed with data:', data);
+    
+    const updatedProfile = {
+      ...profile,
       ...data,
       onboardingComplete: true,
       lastLogDate: new Date().toISOString().split('T')[0]
-    }));
+    };
+    
+    console.log('Updated profile:', updatedProfile);
+    setProfile(updatedProfile);
+    
+    // Save to Firestore
+    if (user) {
+      try {
+        console.log('Saving profile to Firestore for user:', user.uid);
+        await createUserProfile(user.uid, updatedProfile);
+        console.log('Profile saved successfully to Firestore');
+      } catch (error) {
+        console.error('Error saving profile to Firestore:', error);
+      }
+    }
   };
 
-  const handleUpdateProfile = (data: Partial<UserProfile>) => {
+  const handleUpdateProfile = async (data: Partial<UserProfile>) => {
     setProfile(prev => ({ ...prev, ...data }));
+    
+    // Save to Firestore
+    if (user) {
+      try {
+        await updateUserProfile(user.uid, data);
+      } catch (error) {
+        console.error('Error updating profile in Firestore:', error);
+      }
+    }
   };
 
-  const handleWinSave = (win: Win) => {
+  const handleWinSave = async (win: Win) => {
     setWins(prevWins => [win, ...prevWins]);
     
     // Update profile stats
@@ -112,13 +173,27 @@ function MainApp() {
       const isConsecutive = prev.lastLogDate === new Date(Date.now() - 86400000).toISOString().split('T')[0];
       const newStreak = (today === prev.lastLogDate) ? prev.streak : (isConsecutive ? prev.streak + 1 : 1);
 
-      return {
+      const updatedProfile = {
         ...prev,
         totalMoneySaved: prev.totalMoneySaved + win.moneySaved,
         totalCaloriesSaved: prev.totalCaloriesSaved + win.caloriesSaved,
         streak: newStreak,
         lastLogDate: today
       };
+      
+      // Save to Firestore
+      if (user) {
+        updateUserProfile(user.uid, {
+          totalMoneySaved: updatedProfile.totalMoneySaved,
+          totalCaloriesSaved: updatedProfile.totalCaloriesSaved,
+          streak: updatedProfile.streak,
+          lastLogDate: updatedProfile.lastLogDate
+        }).catch(error => console.error('Error updating profile:', error));
+        
+        addWin(user.uid, win).catch(error => console.error('Error saving win:', error));
+      }
+      
+      return updatedProfile;
     });
     
     // Update custom challenges
@@ -136,15 +211,22 @@ function MainApp() {
     setShowTrackModal(false);
   };
 
-  const handleAddWeight = (weight: number) => {
+  const handleAddWeight = async (weight: number) => {
     const entry: WeightEntry = {
-      id: Date.now().toString(),
-      weight,
-      timestamp: Date.now(),
-      userId: '', // Add proper user ID when auth is implemented
-      note: ''
+      date: new Date().toISOString(),
+      weight
     };
-    setWeightHistory(prev => [...prev, entry]);
+    
+    setWeightHistory(prev => [entry, ...prev]);
+    
+    // Save to Firestore
+    if (user) {
+      try {
+        await addWeightEntry(user.uid, entry);
+      } catch (error) {
+        console.error('Error saving weight entry:', error);
+      }
+    }
   };
 
   const handleAddCustomChallenge = (challenge: CustomChallenge) => {
@@ -186,6 +268,7 @@ function MainApp() {
 
   // Show onboarding if not completed
   if (!profile.onboardingComplete) {
+    console.log('Showing onboarding, profile.onboardingComplete:', profile.onboardingComplete);
     return (
       <SafeAreaProvider>
         <StatusBar style="dark" />
@@ -193,6 +276,8 @@ function MainApp() {
       </SafeAreaProvider>
     );
   }
+
+  console.log('Showing main app, currentPage:', currentPage, 'profile:', profile);
 
   if (showTrackModal) {
     return (
@@ -206,10 +291,11 @@ function MainApp() {
   // Main app
   return (
     <SafeAreaProvider>
-      <StatusBar style="dark" />
-      <View className="flex-1 bg-[#E5E7EB]">
-        {currentPage === 'dashboard' && (
-          <Dashboard 
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
+        <StatusBar style="dark" />
+        <View style={{ flex: 1, backgroundColor: colors.background }}>
+          {currentPage === 'dashboard' && (
+            <Dashboard 
             profile={profile} 
             wins={wins} 
             onTrackClick={() => setShowTrackModal(true)} 
@@ -248,6 +334,7 @@ function MainApp() {
 
         <Navigation currentPage={currentPage} setPage={setCurrentPage} />
       </View>
+      </SafeAreaView>
     </SafeAreaProvider>
   );
 }

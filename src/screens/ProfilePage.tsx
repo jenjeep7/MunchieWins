@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, TextInput } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, TextInput, StyleSheet, Alert, Image } from 'react-native';
 import { UserProfile, Win } from '../types';
 import { Trophy, DollarSign, Settings, Edit2, Camera } from 'lucide-react-native';
+import { colors, spacing, borderRadius, shadows } from '../styles/theme';
+import * as ImagePicker from 'expo-image-picker';
 
 interface ProfilePageProps {
   profile: UserProfile;
@@ -18,92 +20,272 @@ export const ProfilePage = ({ profile, wins, onUpdateProfile }: ProfilePageProps
     setIsEditing(false);
   };
 
+  const pickImage = async () => {
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    
+    if (permissionResult.granted === false) {
+      Alert.alert('Permission Required', 'Please allow access to your photos to set a profile picture.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.5,
+    });
+
+    if (!result.canceled) {
+      onUpdateProfile({ avatar: result.assets[0].uri });
+    }
+  };
+
   const unlockedChallengesCount = wins.length > 0 
     ? 1 + (profile.streak >= 7 ? 1 : 0) + (profile.totalMoneySaved > 50 ? 1 : 0) 
     : 0;
 
+  const memberSince = new Date().getFullYear();
+  
+  const primaryMotivation = Array.isArray(profile.onboardingAnswers?.motivation) 
+    ? profile.onboardingAnswers.motivation[0] 
+    : 'Weight Loss';
+
   return (
-    <ScrollView className="flex-1 bg-[#E5E7EB]">
-      <View className="p-6 pb-24 pt-8">
-        <View className="items-center justify-center mb-6">
-          <View className="relative">
-            <View className="w-24 h-24 rounded-full bg-gray-200 border-4 border-white shadow-md items-center justify-center">
-              <Text className="text-4xl">👤</Text>
+    <ScrollView style={styles.container}>
+      <View style={styles.content}>
+        <View style={styles.header}>
+          <View style={styles.avatarContainer}>
+            <View style={styles.avatar}>
+              {profile.avatar ? (
+                <Image source={{ uri: profile.avatar }} style={styles.avatarImage} />
+              ) : (
+                <Text style={styles.avatarEmoji}>👤</Text>
+              )}
             </View>
-            <TouchableOpacity className="absolute bottom-0 right-0 bg-blue-500 p-2 rounded-full shadow-lg">
+            <TouchableOpacity style={styles.cameraButton} onPress={pickImage}>
               <Camera size={14} color="white" />
             </TouchableOpacity>
           </View>
 
-          <View className="mt-4 items-center">
+          <View style={styles.nameContainer}>
             {isEditing ? (
-              <View className="flex-row items-center gap-2">
+              <View style={styles.editRow}>
                 <TextInput 
                   value={newName}
                   onChangeText={setNewName}
-                  className="border-b-2 border-[#FF8C42] text-xl font-bold text-center w-32"
+                  style={styles.nameInput}
                   maxLength={12}
                   autoFocus
                 />
                 <TouchableOpacity onPress={saveName}>
-                  <Text className="text-green-600 font-bold text-sm">Save</Text>
+                  <Text style={styles.saveButton}>Save</Text>
                 </TouchableOpacity>
               </View>
             ) : (
-              <View className="flex-row items-center gap-2">
-                <Text className="text-2xl font-bold text-gray-900">{profile.name}</Text>
+              <View style={styles.nameRow}>
+                <Text style={styles.nameText}>{profile.name}</Text>
                 <TouchableOpacity onPress={() => setIsEditing(true)}>
-                  <Edit2 size={16} color="#9CA3AF" />
+                  <Edit2 size={16} color={colors.gray[400]} />
                 </TouchableOpacity>
               </View>
             )}
           </View>
-          <Text className="text-sm text-gray-500 mt-1">Munchy Member since 2024</Text>
+          <Text style={styles.memberText}>Munchy Member since {memberSince}</Text>
         </View>
 
-        <View className="flex-row gap-4 mb-6">
-          <View className="flex-1 bg-yellow-50 p-4 rounded-2xl border border-yellow-100 items-center">
-            <Trophy size={24} color="#CA8A04" className="mb-2" />
-            <Text className="text-2xl font-bold text-gray-800">{unlockedChallengesCount}</Text>
-            <Text className="text-xs text-gray-500 font-medium">Badges Earned</Text>
+        <View style={styles.statsRow}>
+          <View style={styles.badgeCard}>
+            <Trophy size={32} color={colors.yellow[600]} />
+            <Text style={styles.statNumber}>{unlockedChallengesCount}</Text>
+            <Text style={styles.statLabel}>Badges Earned</Text>
           </View>
-          <View className="flex-1 bg-green-50 p-4 rounded-2xl border border-green-100 items-center">
-            <DollarSign size={24} color="#16A34A" className="mb-2" />
-            <Text className="text-2xl font-bold text-gray-800">${profile.totalMoneySaved.toFixed(0)}</Text>
-            <Text className="text-xs text-gray-500 font-medium">Total Saved</Text>
+          <View style={styles.savingsCard}>
+            <DollarSign size={32} color={colors.green[600]} />
+            <Text style={styles.statNumber}>${profile.totalMoneySaved.toFixed(0)}</Text>
+            <Text style={styles.statLabel}>Total Saved</Text>
           </View>
         </View>
         
-        <View className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-          <View className="flex-row items-center gap-2 mb-4">
-            <Settings size={18} color="#374151" />
-            <Text className="font-bold text-gray-800">Goals</Text>
+        <View style={styles.goalsCard}>
+          <View style={styles.goalsHeader}>
+            <Settings size={18} color={colors.gray[800]} />
+            <Text style={styles.goalsTitle}>Goals</Text>
           </View>
           
-          <View className="border-b border-gray-50 pb-2 mb-4">
-            <View className="flex-row justify-between">
-              <Text className="text-gray-500">Starting Weight</Text>
-              <Text className="font-medium">{profile.startWeight} lbs</Text>
-            </View>
+          <View style={styles.goalRow}>
+            <Text style={styles.goalLabel}>Starting Weight</Text>
+            <Text style={styles.goalValue}>{profile.startWeight} lbs</Text>
           </View>
           
-          <View className="border-b border-gray-50 pb-2 mb-4">
-            <View className="flex-row justify-between">
-              <Text className="text-gray-500">Goal Weight</Text>
-              <Text className="font-medium text-[#FF8C42]">{profile.goalWeight} lbs</Text>
-            </View>
+          <View style={styles.goalRow}>
+            <Text style={styles.goalLabel}>Goal Weight</Text>
+            <Text style={[styles.goalValue, styles.goalValueOrange]}>{profile.goalWeight} lbs</Text>
           </View>
           
-          <View className="flex-row justify-between">
-            <Text className="text-gray-500">Motivation</Text>
-            <Text className="font-medium">
-              {Array.isArray(profile.onboardingAnswers?.motivation) 
-                ? profile.onboardingAnswers.motivation.join(", ") 
-                : (profile.onboardingAnswers?.motivation || "Health")}
-            </Text>
+          <View style={styles.goalRow}>
+            <Text style={styles.goalLabel}>Motivation</Text>
+            <Text style={styles.goalValue}>{primaryMotivation}</Text>
           </View>
         </View>
       </View>
     </ScrollView>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  content: {
+    padding: spacing.lg,
+    paddingBottom: 96,
+    paddingTop: spacing.xl,
+  },
+  header: {
+    alignItems: 'center',
+    marginBottom: spacing.lg,
+  },
+  avatarContainer: {
+    position: 'relative',
+  },
+  avatar: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: colors.gray[200],
+    borderWidth: 4,
+    borderColor: colors.surface,
+    ...shadows.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  avatarImage: {
+    width: '100%',
+    height: '100%',
+  },
+  avatarEmoji: {
+    fontSize: 48,
+  },
+  cameraButton: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    backgroundColor: colors.blue[500],
+    padding: spacing.sm,
+    borderRadius: borderRadius.full,
+    ...shadows.lg,
+  },
+  nameContainer: {
+    marginTop: spacing.md,
+    alignItems: 'center',
+  },
+  editRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  nameInput: {
+    borderBottomWidth: 2,
+    borderBottomColor: colors.primary,
+    fontSize: 20,
+    fontWeight: '700',
+    textAlign: 'center',
+    width: 128,
+    padding: spacing.xs,
+  },
+  saveButton: {
+    color: colors.green[600],
+    fontWeight: '700',
+    fontSize: 14,
+  },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  nameText: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: colors.gray[900],
+  },
+  memberText: {
+    fontSize: 14,
+    color: colors.text.secondary,
+    marginTop: 4,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  badgeCard: {
+    flex: 1,
+    backgroundColor: colors.yellow[50],
+    padding: spacing.md,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: colors.yellow[100],
+    alignItems: 'center',
+  },
+  savingsCard: {
+    flex: 1,
+    backgroundColor: colors.green[50],
+    padding: spacing.md,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: colors.green[100],
+    alignItems: 'center',
+  },
+  statNumber: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: colors.gray[800],
+    marginTop: spacing.xs,
+  },
+  statLabel: {
+    fontSize: 12,
+    color: colors.text.secondary,
+    fontWeight: '500',
+    marginTop: spacing.xs,
+  },
+  goalsCard: {
+    backgroundColor: colors.surface,
+    padding: spacing.lg,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: colors.gray[100],
+    ...shadows.sm,
+  },
+  goalsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  goalsTitle: {
+    fontWeight: '700',
+    color: colors.gray[800],
+    fontSize: 16,
+  },
+  goalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.gray[50],
+  },
+  goalLabel: {
+    color: colors.text.secondary,
+    fontSize: 14,
+  },
+  goalValue: {
+    fontWeight: '500',
+    color: colors.gray[800],
+    fontSize: 14,
+  },
+  goalValueOrange: {
+    color: colors.primary,
+  },
+});

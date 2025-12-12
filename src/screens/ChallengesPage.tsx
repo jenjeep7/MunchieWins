@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, TextInput, Modal } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, TextInput, Modal, StyleSheet } from 'react-native';
 import { UserProfile, Win, CustomChallenge } from '../types';
-import { Plus, X, Zap, Star, CheckCircle } from 'lucide-react-native';
+import { Plus, X, Star } from 'lucide-react-native';
+import { colors, spacing, borderRadius, shadows } from '../styles/theme';
 
 interface ChallengesPageProps {
   profile: UserProfile;
@@ -35,72 +36,71 @@ export const ChallengesPage = ({
     setCustomTarget('5');
   };
 
+  const recommendedChallenges = [
+    { emoji: '🥤', title: 'No Soda Streak', description: 'Avoid all sugary carbonated dri...' },
+    { emoji: '🍳', title: 'Home Cooking Hero', description: 'Cook dinner at home instead of...' },
+    { emoji: '🍭', title: 'Sugar Detox', description: 'Skip dessert or candy.' },
+    { emoji: '👟', title: 'Step It Up', description: 'Go for a walk instead of snacki...' },
+  ];
+
+  const exploreChallenges = [
+    { emoji: '🍷', title: 'Dry Week' },
+    { emoji: '💧', title: 'Hydration Champion' },
+    { emoji: '🥦', title: 'Eat Your Greens' },
+    { emoji: '💰', title: 'Wallet Warrior' },
+  ];
+
   return (
-    <ScrollView className="flex-1 bg-[#E5E7EB]">
-      <View className="p-6 pb-24 pt-8">
-        <View className="flex-row justify-between items-end mb-8">
+    <ScrollView style={styles.container}>
+      <View style={styles.content}>
+        <View style={styles.header}>
           <View>
-            <Text className="text-2xl font-bold text-gray-800">Challenges</Text>
-            <Text className="text-sm text-gray-500">Level up your habits</Text>
+            <Text style={styles.title}>Challenges</Text>
+            <Text style={styles.subtitle}>Level up your habits</Text>
           </View>
           <TouchableOpacity 
             onPress={() => setIsCreating(true)}
-            className="bg-black px-4 py-2 rounded-xl flex-row items-center gap-2"
+            style={styles.customButton}
           >
             <Plus size={16} color="white" />
-            <Text className="text-white text-xs font-bold">Custom</Text>
+            <Text style={styles.customButtonText}>Custom</Text>
           </TouchableOpacity>
         </View>
 
-        {profile.customChallenges && profile.customChallenges.length > 0 && (
-          <View>
-            <View className="flex-row items-center gap-2 mb-4">
-              <Zap size={14} color="#9CA3AF" />
-              <Text className="font-bold text-gray-400 text-xs uppercase tracking-wider">
-                Active Goals
-              </Text>
-            </View>
-            {profile.customChallenges.map(c => (
-              <View key={c.id} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 mb-4">
-                <View className="flex-row justify-between items-start mb-2">
-                  <Text className="font-bold text-lg text-gray-800 flex-1">{c.title}</Text>
-                  <View className="bg-orange-50 px-2 py-1 rounded-lg">
-                    <Text className="text-[#FF8C42] text-xs font-bold">
-                      {c.current.toFixed(0)} / {c.target} {c.unit}
-                    </Text>
-                  </View>
-                </View>
-                
-                <View className="w-full bg-gray-100 h-2 rounded-full mb-4 overflow-hidden">
-                  <View 
-                    className="bg-[#FF8C42] h-full rounded-full"
-                    style={{ width: `${Math.min((c.current / c.target) * 100, 100)}%` }}
-                  />
-                </View>
-                
-                {c.current >= c.target ? (
-                  <View className="w-full py-3 bg-green-500 rounded-xl flex-row items-center justify-center gap-2">
-                    <CheckCircle size={18} color="white" />
-                    <Text className="text-white font-bold text-sm">Completed!</Text>
-                  </View>
-                ) : (
-                  <TouchableOpacity 
-                    onPress={() => onUpdateCustomChallenge(c.id)}
-                    className="w-full py-3 bg-gray-900 rounded-xl"
-                  >
-                    <Text className="text-white font-bold text-sm text-center">+ Log Progress</Text>
-                  </TouchableOpacity>
-                )}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Star size={16} color={colors.gray[400]} />
+            <Text style={styles.sectionTitle}>RECOMMENDED FOR YOU</Text>
+          </View>
+          
+          {recommendedChallenges.map((challenge, index) => (
+            <View key={index} style={styles.challengeCard}>
+              <View style={styles.challengeIconContainer}>
+                <Text style={styles.challengeEmoji}>{challenge.emoji}</Text>
               </View>
+              <View style={styles.challengeContent}>
+                <Text style={styles.challengeTitle}>{challenge.title}</Text>
+                <Text style={styles.challengeDescription}>{challenge.description}</Text>
+              </View>
+              <TouchableOpacity style={styles.viewButton}>
+                <Text style={styles.viewButtonText}>View</Text>
+              </TouchableOpacity>
+            </View>
+          ))}
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>EXPLORE MORE</Text>
+          
+          <View style={styles.exploreGrid}>
+            {exploreChallenges.map((challenge, index) => (
+              <TouchableOpacity key={index} style={styles.exploreCard}>
+                <Text style={styles.exploreEmoji}>{challenge.emoji}</Text>
+                <Text style={styles.exploreTitle}>{challenge.title}</Text>
+              </TouchableOpacity>
             ))}
           </View>
-        )}
-
-        {(!profile.customChallenges || profile.customChallenges.length === 0) && (
-          <View className="py-12 items-center">
-            <Text className="text-gray-400">No active challenges. Create one!</Text>
-          </View>
-        )}
+        </View>
       </View>
 
       {/* Create Modal */}
@@ -110,52 +110,52 @@ export const ChallengesPage = ({
         animationType="slide"
         onRequestClose={() => setIsCreating(false)}
       >
-        <View className="flex-1 bg-black/60 items-center justify-center p-4">
-          <View className="bg-white w-full max-w-sm rounded-3xl overflow-hidden">
-            <View className="p-6 border-b border-gray-100 flex-row justify-between items-center">
-              <Text className="text-xl font-bold text-gray-800">Create Goal</Text>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Create Goal</Text>
               <TouchableOpacity onPress={() => setIsCreating(false)}>
-                <X size={24} color="#9CA3AF" />
+                <X size={24} color={colors.gray[400]} />
               </TouchableOpacity>
             </View>
             
-            <View className="p-6">
-              <View className="mb-5">
-                <Text className="text-xs font-bold text-gray-500 uppercase mb-2">Goal Name / Behavior</Text>
+            <View style={styles.modalBody}>
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Goal Name / Behavior</Text>
                 <TextInput 
-                  className="w-full p-4 bg-gray-50 rounded-xl font-bold text-gray-800 border-2 border-transparent"
+                  style={styles.input}
                   placeholder="e.g. No Snacking After 8PM"
                   value={customTitle}
                   onChangeText={setCustomTitle}
                 />
               </View>
               
-              <View className="flex-row gap-4">
-                <View className="flex-1">
-                  <Text className="text-xs font-bold text-gray-500 uppercase mb-2">Target</Text>
+              <View style={styles.inputRow}>
+                <View style={styles.inputGroupSmall}>
+                  <Text style={styles.inputLabel}>Target</Text>
                   <TextInput 
                     keyboardType="numeric"
-                    className="w-full p-4 bg-gray-50 rounded-xl font-bold text-gray-800 border-2 border-transparent text-center"
+                    style={[styles.input, styles.inputCenter]}
                     value={customTarget}
                     onChangeText={setCustomTarget}
                   />
                 </View>
-                <View className="flex-[1.5]">
-                  <Text className="text-xs font-bold text-gray-500 uppercase mb-2">Unit</Text>
-                  <View className="w-full p-4 bg-gray-50 rounded-xl">
-                    <Text className="font-bold text-gray-800">{customUnit}</Text>
+                <View style={styles.inputGroupLarge}>
+                  <Text style={styles.inputLabel}>Unit</Text>
+                  <View style={styles.input}>
+                    <Text style={styles.inputText}>{customUnit}</Text>
                   </View>
                 </View>
               </View>
             </View>
             
-            <View className="p-6 border-t border-gray-100 bg-gray-50">
+            <View style={styles.modalFooter}>
               <TouchableOpacity 
                 onPress={handleCreate}
                 disabled={!customTitle}
-                className={`w-full bg-black py-4 rounded-xl ${!customTitle ? 'opacity-50' : ''}`}
+                style={[styles.createButton, !customTitle && styles.createButtonDisabled]}
               >
-                <Text className="text-white font-bold text-center">Create Challenge</Text>
+                <Text style={styles.createButtonText}>Create Challenge</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -164,3 +164,220 @@ export const ChallengesPage = ({
     </ScrollView>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  content: {
+    padding: spacing.lg,
+    paddingBottom: 96,
+    paddingTop: spacing.xl,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    marginBottom: spacing.xl,
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: '700',
+    color: colors.gray[800],
+  },
+  subtitle: {
+    fontSize: 16,
+    color: colors.text.secondary,
+    marginTop: spacing.xs,
+  },
+  customButton: {
+    backgroundColor: colors.gray[900],
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.lg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  customButtonText: {
+    color: colors.surface,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  section: {
+    marginBottom: spacing.xl,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginBottom: spacing.md,
+  },
+  sectionTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.gray[400],
+    letterSpacing: 0.5,
+  },
+  challengeCard: {
+    backgroundColor: colors.surface,
+    padding: spacing.lg,
+    borderRadius: borderRadius.xl,
+    borderWidth: 1,
+    borderColor: colors.gray[100],
+    ...shadows.sm,
+    marginBottom: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  challengeIconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.gray[50],
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  challengeEmoji: {
+    fontSize: 28,
+  },
+  challengeContent: {
+    flex: 1,
+  },
+  challengeTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.gray[900],
+    marginBottom: spacing.xs,
+  },
+  challengeDescription: {
+    fontSize: 14,
+    color: colors.text.secondary,
+  },
+  viewButton: {
+    backgroundColor: colors.blue[50],
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.md,
+  },
+  viewButtonText: {
+    color: colors.blue[500],
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  exploreGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.md,
+  },
+  exploreCard: {
+    backgroundColor: colors.surface,
+    width: '48%',
+    padding: spacing.lg,
+    borderRadius: borderRadius.xl,
+    borderWidth: 1,
+    borderColor: colors.gray[100],
+    ...shadows.sm,
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  exploreEmoji: {
+    fontSize: 40,
+  },
+  exploreTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.gray[900],
+    textAlign: 'center',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing.lg,
+  },
+  modalContent: {
+    backgroundColor: colors.surface,
+    width: '100%',
+    maxWidth: 400,
+    borderRadius: borderRadius.xl * 1.5,
+    overflow: 'hidden',
+  },
+  modalHeader: {
+    padding: spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.gray[100],
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: colors.gray[800],
+  },
+  modalBody: {
+    padding: spacing.lg,
+  },
+  inputGroup: {
+    marginBottom: spacing.lg,
+  },
+  inputLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.gray[500],
+    textTransform: 'uppercase',
+    marginBottom: spacing.sm,
+  },
+  input: {
+    width: '100%',
+    padding: spacing.md,
+    backgroundColor: colors.gray[50],
+    borderRadius: borderRadius.lg,
+    fontWeight: '700',
+    color: colors.gray[800],
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  inputCenter: {
+    textAlign: 'center',
+  },
+  inputText: {
+    fontWeight: '700',
+    color: colors.gray[800],
+  },
+  inputRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  inputGroupSmall: {
+    flex: 1,
+  },
+  inputGroupLarge: {
+    flex: 1.5,
+  },
+  modalFooter: {
+    padding: spacing.lg,
+    borderTopWidth: 1,
+    borderTopColor: colors.gray[100],
+    backgroundColor: colors.gray[50],
+  },
+  createButton: {
+    width: '100%',
+    backgroundColor: colors.gray[900],
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.lg,
+    alignItems: 'center',
+  },
+  createButtonDisabled: {
+    opacity: 0.5,
+  },
+  createButtonText: {
+    color: colors.surface,
+    fontWeight: '700',
+    fontSize: 16,
+  },
+});

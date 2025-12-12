@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { UserProfile, WeightEntry } from '../types';
 import { WeightChart } from '../components/WeightChart';
 import { MunchyMascot } from '../components/MunchyMascot';
 import { Scale } from 'lucide-react-native';
+import { colors, spacing, borderRadius, shadows } from '../styles/theme';
 
 interface WeightPageProps {
   profile: UserProfile;
@@ -13,14 +14,12 @@ interface WeightPageProps {
 
 export const WeightPage = ({ profile, weightHistory, onAddWeight }: WeightPageProps) => {
   const [newWeight, setNewWeight] = useState('');
-  const [analysis, setAnalysis] = useState('');
 
   const handleWeightSubmit = async () => {
     const w = parseFloat(newWeight);
     if (w) {
       onAddWeight(w);
       setNewWeight('');
-      setAnalysis("Great progress! Keep it up.");
     }
   };
 
@@ -29,50 +28,148 @@ export const WeightPage = ({ profile, weightHistory, onAddWeight }: WeightPagePr
     : profile.startWeight;
 
   return (
-    <ScrollView className="flex-1 bg-[#E5E7EB]">
-      <View className="p-6 pb-24 pt-8">
-        <View className="flex-row justify-between items-center mb-6">
+    <ScrollView style={styles.container}>
+      <View style={styles.content}>
+        <View style={styles.header}>
           <View>
-            <Text className="text-2xl font-bold text-gray-800">Weight Tracker</Text>
-            <Text className="text-xs text-gray-500">Keep it up!</Text>
+            <Text style={styles.title}>Weight Tracker</Text>
+            <Text style={styles.subtitle}>Keep it up!</Text>
           </View>
           <MunchyMascot mood="proud" size="sm" />
         </View>
         
-        <View className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 mb-6">
-          <View className="flex-row justify-between items-center mb-4">
-            <View className="flex-row items-center gap-2">
-              <Scale size={18} color="#374151" />
-              <Text className="font-bold text-gray-700">Update Weight</Text>
+        <View style={styles.updateCard}>
+          <View style={styles.updateHeader}>
+            <View style={styles.updateTitleRow}>
+              <Scale size={18} color={colors.gray[800]} />
+              <Text style={styles.updateTitle}>Update Weight</Text>
             </View>
-            <Text className="text-xs text-gray-400">Goal: {profile.goalWeight} lbs</Text>
+            <Text style={styles.goalText}>Goal: {profile.goalWeight} lbs</Text>
           </View>
           
-          <View className="flex-row gap-2">
+          <View style={styles.inputRow}>
             <TextInput 
               keyboardType="numeric"
               value={newWeight}
               onChangeText={setNewWeight}
               placeholder={currentWeight.toString()}
-              className="flex-1 p-3 bg-gray-50 rounded-xl"
+              placeholderTextColor={colors.gray[400]}
+              style={styles.input}
             />
             <TouchableOpacity 
               onPress={handleWeightSubmit}
-              className="bg-black px-6 rounded-xl items-center justify-center"
+              style={styles.logButton}
             >
-              <Text className="text-white font-bold text-sm">Log</Text>
+              <Text style={styles.logButtonText}>Log</Text>
             </TouchableOpacity>
           </View>
-          
-          {analysis && (
-            <View className="mt-3 bg-gray-50 p-2 rounded-lg border border-gray-100">
-              <Text className="text-sm text-gray-600 italic">"{analysis}"</Text>
-            </View>
-          )}
         </View>
         
-        <WeightChart data={weightHistory} />
+        <View style={styles.chartCard}>
+          {weightHistory.length === 0 ? (
+            <Text style={styles.emptyText}>Log your weight to see the graph!</Text>
+          ) : (
+            <WeightChart data={weightHistory} />
+          )}
+        </View>
       </View>
     </ScrollView>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  content: {
+    padding: spacing.lg,
+    paddingBottom: 96,
+    paddingTop: spacing.xl,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.lg,
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: '700',
+    color: colors.gray[800],
+  },
+  subtitle: {
+    fontSize: 14,
+    color: colors.text.secondary,
+    marginTop: spacing.xs,
+  },
+  updateCard: {
+    backgroundColor: colors.surface,
+    padding: spacing.lg,
+    borderRadius: borderRadius.xl,
+    borderWidth: 1,
+    borderColor: colors.gray[100],
+    ...shadows.sm,
+    marginBottom: spacing.lg,
+  },
+  updateHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  updateTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  updateTitle: {
+    fontWeight: '700',
+    color: colors.gray[800],
+    fontSize: 16,
+  },
+  goalText: {
+    fontSize: 14,
+    color: colors.gray[400],
+  },
+  inputRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  input: {
+    flex: 1,
+    padding: spacing.md,
+    backgroundColor: colors.gray[50],
+    borderRadius: borderRadius.lg,
+    fontSize: 16,
+    color: colors.gray[800],
+  },
+  logButton: {
+    backgroundColor: colors.gray[900],
+    paddingHorizontal: spacing.xl,
+    borderRadius: borderRadius.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  logButtonText: {
+    color: colors.surface,
+    fontWeight: '700',
+    fontSize: 16,
+  },
+  chartCard: {
+    backgroundColor: colors.surface,
+    padding: spacing.xl,
+    borderRadius: borderRadius.xl,
+    borderWidth: 1,
+    borderColor: colors.gray[100],
+    ...shadows.sm,
+    minHeight: 300,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyText: {
+    color: colors.gray[400],
+    fontSize: 16,
+    textAlign: 'center',
+  },
+});
