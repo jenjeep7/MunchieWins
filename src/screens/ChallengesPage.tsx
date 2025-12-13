@@ -355,6 +355,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.gray[400],
     letterSpacing: 0.5,
+    marginBottom: spacing.md,
   },
   challengeCard: {
     backgroundColor: colors.surface,
@@ -406,7 +407,7 @@ const styles = StyleSheet.create({
   exploreGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: spacing.md,
+    justifyContent: 'space-between',
   },
   exploreCard: {
     backgroundColor: colors.surface,
@@ -418,6 +419,7 @@ const styles = StyleSheet.create({
     ...shadows.sm,
     alignItems: 'center',
     gap: spacing.sm,
+    marginBottom: spacing.md,
   },
   exploreEmoji: {
     fontSize: 40,
